@@ -14,8 +14,8 @@ def Gripper_V2(parentnode=None,
                translation=[0,0,0],
                contact_point = loadPointListFromFile("Data/Contact_Point_Veri.json"),
                fixingbox_gripper_1=[-8.0,0.0,5.0,8.0,-8.5,0.0],
-               # effector_Position_1 = [5., 35.5 ,10. ],
-               # effector_Position_2 = [-5., 35.5 ,10. ],
+               effector_Position_1 = [5., 35.5 ,10. ],
+               effector_Position_2 = [-5., 35.5 ,10. ],
                effector_Position = [0.0479262918,27.6100006,10]):
     
     gripper = parentnode.addChild(name)
