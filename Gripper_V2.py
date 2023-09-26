@@ -6,7 +6,7 @@ from stlib3.physics.constraints import FixedBox
 from Prefab_Component.effectorTarget import effectorTarget
 from Prefab_Component.virtual_actuator import virtual_actuator
 from Prefab_Component.position_effector import PositionEffector
-from Prefab_Component.ForceVisual import ForceVisual
+# from Prefab_Component.ForceVisual import ForceVisual
 
 def Gripper_V2(parentnode=None, 
                name="Gripper", 
@@ -106,7 +106,7 @@ def Gripper_V2(parentnode=None,
     # parentnode.addObject(dataController)
     
     ###Add Force_Visualization
-    ForceVisual(parentnode)
+   #  ForceVisual(parentnode)
     return VF1y, VF1z
     
     #  return VF1z
