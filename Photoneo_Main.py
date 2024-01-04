@@ -3,10 +3,16 @@ import open3d as o3d
 import cv2
 import os
 import sys
+import time
+import socket
 from sys import platform
 from harvesters.core import Harvester
-import threading
-import time
+
+def Send_Data(data):
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect(('localhost', 12345))
+    client_socket.sendall(data.encode())
+    print("Data sent")
 
 def point_cloud_check(point_cloud_component):
     
@@ -58,6 +64,14 @@ def Layer_2nd(texture_rgb , pointcloud_1st_edition):
 
 def vertex_selection(pointcloud_2nd_edition):
     
+    Rotation_Matrix = np.array([
+        [0., 0., 1.],
+        [0., -1., 0.],
+        [1., 0., 0.]
+    ])
+    
+    Traslation_Matrix = np.array([-96.1, 165.32, -43.08])
+    
     x_max = np.max(pointcloud_2nd_edition[: , 0])
     z_max = np.max(pointcloud_2nd_edition[: , 2])                    
     pointcloud_non_zero_x = pointcloud_2nd_edition[pointcloud_2nd_edition[: , 0] != 0][: , 0]
@@ -76,24 +90,33 @@ def vertex_selection(pointcloud_2nd_edition):
     distance_lower_left = np.linalg.norm(pointcloud_2nd_edition - target_point_lower_left, axis=1)
     nearest_index_lower_left = np.argmin(distance_lower_left)
     nearest_point_lower_left = pointcloud_2nd_edition[nearest_index_lower_left]
+    T1M = nearest_point_lower_left.copy().reshape(3,1)
+    T1 = np.dot(Rotation_Matrix , T1M).reshape(1,3) + Traslation_Matrix
     
     distance_upper_left = np.linalg.norm(pointcloud_2nd_edition - target_point_upper_left, axis=1)
     nearest_index_upper_left = np.argmin(distance_upper_left)
     nearest_point_upper_left = pointcloud_2nd_edition[nearest_index_upper_left]
+    T3M = nearest_point_upper_left.copy().reshape(3,1)
+    T3 = np.dot(Rotation_Matrix , T3M).reshape(1,3) + Traslation_Matrix
     
     distance_lower_right = np.linalg.norm(pointcloud_2nd_edition - target_point_lower_right, axis=1)
     nearest_index_lower_right = np.argmin(distance_lower_right)
     nearest_point_lower_right = pointcloud_2nd_edition[nearest_index_lower_right]
+    T2M = nearest_point_lower_right.copy().reshape(3,1)
+    T2 = np.dot(Rotation_Matrix , T2M).reshape(1,3) + Traslation_Matrix
     
     distance_upper_right = np.linalg.norm(pointcloud_2nd_edition - target_point_upper_right, axis=1)
     nearest_index_upper_right = np.argmin(distance_upper_right)
-    nearest_point_upper_right = pointcloud_2nd_edition[nearest_index_upper_right]                    
-    print("Lower_Left: Target_point:", target_point_lower_left, "Nearest_Point", nearest_point_lower_left)
-    print("Upper_Left: Target_point:", target_point_upper_left, "Nearest_Point", nearest_point_upper_left)
-    print("Lower_right: Target_point:", target_point_lower_right, "Nearest_Point", nearest_point_lower_right)
-    print("Upper_right: Target_point:", target_point_upper_right, "Nearest_Point", nearest_point_upper_right)
+    nearest_point_upper_right = pointcloud_2nd_edition[nearest_index_upper_right]
+    T4M = nearest_point_upper_right.copy().reshape(3,1)
+    T4 = np.dot(Rotation_Matrix , T4M).reshape(1,3) + Traslation_Matrix
+                       
+    # print("Lower_Left: Target_point:", target_point_lower_left, "Target_1", T1)
+    # print("Lower_right: Target_point:", target_point_lower_right, "Target_2", T2)
+    # print("Upper_Left: Target_point:", target_point_upper_left, "Target_3", T3)
+    # print("Upper_right: Target_point:", target_point_upper_right, "Target_4", T4)
     
-    return nearest_index_lower_left, nearest_index_upper_left, nearest_index_lower_right, nearest_index_upper_right
+    return T1, T2
 
 def visualize_pointcloud(nearest_index_lower_left, nearest_index_upper_left, nearest_index_lower_right, nearest_index_upper_right, pointcloud, texture_rgb):
     
@@ -198,18 +221,10 @@ def freerun():
                     pointcloud_2nd_edition[np.all(texture_greyscale_v2  == 0, axis=1)] = 0
                     
                     #Select 4 vertexes
-                    nearest_index_lower_left, nearest_index_upper_left, nearest_index_lower_right, nearest_index_upper_right = vertex_selection(pointcloud_2nd_edition)
-                    
-                    #Visualize the filtered points
-                    # pcd = visualize_pointcloud(nearest_index_lower_left, nearest_index_upper_left, nearest_index_lower_right, nearest_index_upper_right, pointcloud, texture_rgb)
-                    
-                    # vis.clear_geometries()
-                    # vis.poll_events()
-                    
-                    # vis.add_geometry(pcd)
-                    # vis.poll_events()
-                    # vis.update_renderer()
-                    # vis.poll_events()
+                    Target = vertex_selection(pointcloud_2nd_edition)
+                    print("Target_1:", Target[0], "Target_2:", Target[1])
+                    data = input(Target)
+                    Send_Data(data)
                     time.sleep(1/8)
 
 

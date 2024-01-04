@@ -8,15 +8,37 @@ from Prefab_Component.virtual_actuator import virtual_actuator
 from Prefab_Component.position_effector import PositionEffector
 from Prefab_Component.ModifiedController import Controller
 from Photoneo_Main import freerun
+import socket
 
+def Receive_Data():
+   server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+   server_socket.bind(('localhost', 12345))
+   server_socket.listen()
+   print("Server Starts, Waiting for connection")
+
+   while True:
+      connection, address = server_socket.accept()
+      print(f"Receive the connection from {address}")
+      
+      try:
+            while True:
+                data = connection.recv(1024)
+                if not data:
+                    # If there is no data recieved, break
+                    break
+                print("Received data:", data.decode())
+      except Exception as e:
+         print(f"Error: {e}")
+
+   
 def Gripper_V2(parentnode=None, 
                name="Gripper", 
                rotation=[0,0,0], 
                translation=[0,0,0],
                contact_point = loadPointListFromFile("Data/Contact_Point_Veri.json"),
                fixingbox_gripper_1=[-8.0,8.5,10.0,8.0,-8.5,0.0],
-               effector_Position_1 = [7.3, 38.5 ,0. ],
-               effector_Position_2 = [-7.3, 38.5 ,0. ],
+               effector_Position_1 = [-7.3, 38.5 ,9.6],
+               effector_Position_2 = [7.3, 38.5 ,9.6],
                target1 = None,
                target2 = None):
     
@@ -51,12 +73,12 @@ def Gripper_V2(parentnode=None,
     gripper.VF1y = virtual_actuator(parentNode=p1, 
                            name="VA_y",
                            contact_point=contact_point,
-                           pullPoint=[0,-1972,10])
+                           pullPoint=[0,-1973,0])
     
     gripper.VF1z = virtual_actuator(parentNode=p1,
                            name="VA_z",
                            contact_point=contact_point,
-                           pullPoint=[0,28,-1990])
+                           pullPoint=[0,27,-2000])
     
     ###Add PositionEffector
     pe = mechobject.addChild('Effectors')
@@ -110,12 +132,12 @@ def createScene(rootNode):
                              name = 'Target1', 
                              showcolor=[255., 0., 0., 255.], 
                              showObjectScale= 0.5,
-                             position = [7.3, 38., -0.5])
+                             position = [-7.3, 38., 10.1])
     target2 = effectorTarget(rootNode,
                              name = 'Target2', 
                              showcolor = [255., 0., 0., 255.], 
                              showObjectScale= 0.5, 
-                             position = [-7.3, 38., -0.5])
+                             position = [7.3, 38., 10.1])
     
    #  print(list(target1.t.__data__))
    #  print(target1.t.findData("position").value)
@@ -135,3 +157,6 @@ def createScene(rootNode):
     rootNode.addObject(dataController)
     
     return rootNode
+ 
+if __name__ == "__main__":
+   createScene()
