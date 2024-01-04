@@ -9,7 +9,7 @@ from Prefab_Component.virtual_actuator import virtual_actuator
 from Prefab_Component.position_effector import PositionEffector
 # from Prefab_Component.ForceVisual import ForceVisual
 
-def Gripper_V2(parentNode = None,
+def Gripper_V2(parentnode = None,
                name="Gripper", 
                rotation=[0,0,0], 
                translation=[0,0,0],
