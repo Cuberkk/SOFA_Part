@@ -1,12 +1,12 @@
 # from Gripper_V2 import Gripper_V2
+import Sofa.Core
 from splib3.loaders import loadPointListFromFile
 from stlib3.physics.constraints import FixedBox
 from Prefab_Component.ElasticMaterialObject import ElasticMaterialObject
 from Prefab_Component.effectorTarget import effectorTarget
 from Prefab_Component.virtual_actuator import virtual_actuator
 from Prefab_Component.position_effector import PositionEffector
-from Prefab_Component.DataController_1_Point import DataController_1_Point
-from Prefab_Component.TargetController import TargetController
+from Prefab_Component.ModifiedController import Controller
 from Photoneo_Main import freerun
 
 def Gripper_V2(parentnode=None, 
@@ -17,9 +17,8 @@ def Gripper_V2(parentnode=None,
                fixingbox_gripper_1=[-8.0,8.5,10.0,8.0,-8.5,0.0],
                effector_Position_1 = [7.3, 38.5 ,0. ],
                effector_Position_2 = [-7.3, 38.5 ,0. ],
-               target_1 = [7.3, 38., -0.5],
-               target_2 = [-7.3, 38., -0.5]
-               ):
+               target1 = None,
+               target2 = None):
     
     gripper = parentnode.addChild(name)
     
@@ -47,51 +46,20 @@ def Gripper_V2(parentnode=None,
     ###Add Cables
     act = mechobject.addChild("Vitual_Actuator")
     
-    ###Contact_point 1
+    ###Contact_point
     p1 = act.addChild("Point")
-    VF1y = virtual_actuator(parentNode=p1, 
+    gripper.VF1y = virtual_actuator(parentNode=p1, 
                            name="VA_y",
                            contact_point=contact_point,
                            pullPoint=[0,-1972,10])
     
-    VF1z = virtual_actuator(parentNode=p1,
+    gripper.VF1z = virtual_actuator(parentNode=p1,
                            name="VA_z",
                            contact_point=contact_point,
                            pullPoint=[0,28,-1990])
-     
-    ###Add EffectorTarget
-   #  freerun()
-   #  target1, target2 = freerun()
-    
-   #  target = effectorTarget(parentnode,
-   #                           name = 'Target',
-   #                           showcolor=[255., 0., 0., 255.],
-   #                           showObjectScale=0.5,
-   #                           position=target1
-                           #   position=[7.3,37.5,-1]
-                           #   )
-    
-                                #  position=[0.0479262918+0.0528035,27.6100006+1.59477,10-6.26488])
-    
-    target1 = effectorTarget(parentnode,
-                             name = 'Target1', 
-                             showcolor=[255., 0., 0., 255.], 
-                             showObjectScale= 0.5, 
-                             position=target_1)
-    target2 = effectorTarget(parentnode,
-                             name = 'Target2', 
-                             showcolor=[0., 255., 0., 255.], 
-                             showObjectScale= 0.5, 
-                             position=target_2)
-    
     
     ###Add PositionEffector
     pe = mechobject.addChild('Effectors')
-   #  PositionEffector(parentNode= pe,
-   #                   name="Position_Effector_3",
-   #                   effector_Position=effector_Position,
-   #                   target=target)
-    
     PositionEffector(parentNode= pe,
                      name="Position_Effector_1",
                      effector_Position=effector_Position_1,
@@ -102,7 +70,7 @@ def Gripper_V2(parentnode=None,
                      effector_Position=effector_Position_2,
                      target=target2)
     
-    return VF1y, VF1z
+    return gripper
 
 def createScene(rootNode):
     from stlib3.scene import MainHeader
@@ -138,21 +106,31 @@ def createScene(rootNode):
     rootNode.addObject('FreeMotionAnimationLoop')
     rootNode.addObject('QPInverseProblemSolver', epsilon=1e-10)
     
-    targetController = TargetController(name = "Target Controller",
-                                        parentNode = rootNode,
-                                        target1 = [7.3, 38., -0.5],
-                                        target2 = [-7.3, 38., -0.5])
+    target1 = effectorTarget(rootNode,
+                             name = 'Target1', 
+                             showcolor=[255., 0., 0., 255.], 
+                             showObjectScale= 0.5,
+                             position = [7.3, 38., -0.5])
+    target2 = effectorTarget(rootNode,
+                             name = 'Target2', 
+                             showcolor = [255., 0., 0., 255.], 
+                             showObjectScale= 0.5, 
+                             position = [-7.3, 38., -0.5])
     
-    VF1y, VF1z= Gripper_V2(parentnode=rootNode,
-                           target_1 = targetController.target1,
-                           target_2 = targetController.target2)
+   #  print(list(target1.t.__data__))
+   #  print(target1.t.findData("position").value)
+    
+    gripper = Gripper_V2(parentnode=rootNode, 
+                         target1 = target1,
+                         target2 = target2)
     
     
-    ###DataController for 1 point
-    dataController=DataController_1_Point(name = "VFO",
-                                    object2 = VF1y, 
-                                    object3 = VF1z,
-                                    parentNode = rootNode)
+    #Controller
+    dataController=Controller(parentNode = rootNode,
+                                          name = "VFO",
+                                          object_Y = gripper.VF1y, 
+                                          object_Z = gripper.VF1z,
+                                          target_1 = target1)
     
     rootNode.addObject(dataController)
     

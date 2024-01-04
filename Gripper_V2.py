@@ -1,6 +1,7 @@
 # from stlib3.physics.deformable import ElasticMaterialObject
+import Sofa.Core
 from Prefab_Component.ElasticMaterialObject import ElasticMaterialObject
-from Prefab_Component.DataController_1_Point import DataController_1_Point
+from Prefab_Component.ModifiedController import DataController_1_Point
 from splib3.loaders import loadPointListFromFile
 from stlib3.physics.constraints import FixedBox
 from Prefab_Component.effectorTarget import effectorTarget
@@ -8,7 +9,7 @@ from Prefab_Component.virtual_actuator import virtual_actuator
 from Prefab_Component.position_effector import PositionEffector
 # from Prefab_Component.ForceVisual import ForceVisual
 
-def Gripper_V2(parentnode=None, 
+def Gripper_V2(parentNode = None,
                name="Gripper", 
                rotation=[0,0,0], 
                translation=[0,0,0],
@@ -18,7 +19,7 @@ def Gripper_V2(parentnode=None,
                # effector_Position_2 = [-5., 35.5 ,10. ],
                effector_Position = [0.0479262918,27.6100006,10]):
     
-    gripper = parentnode.addChild(name)
+    gripper = Sofa.Core.Node(name)
     
     mechobject = ElasticMaterialObject(gripper,
                                        name = "Mesh",
