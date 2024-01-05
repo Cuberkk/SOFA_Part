@@ -9,6 +9,39 @@ from Prefab_Component.position_effector import PositionEffector
 from Prefab_Component.ModifiedController import Controller
 from Photoneo_Main import freerun
 import socket
+import json
+import threading
+import numpy as np
+
+def receive_data(server_socket, controller):
+   while True:
+       try:
+           connection, address = server_socket.accept()
+           print(f"Receive the conncetion from {address}")
+           
+           while True:
+               try:
+                   data = connection.recv(1024)
+                   if not data:
+                       break
+                   data_arr = json.loads(data.decode())
+                   target1 = np.array(data_arr[0][0]).reshape(1,3)
+                   target2 = np.array(data_arr[1][0]).reshape(1,3)
+                   print("Target1:", target1, "Target2:", target2)
+                   controller.update_target1_position(target1,target2)
+                   
+               except Exception as e:
+                   print(f"Error: {e}")
+                   break
+       except socket.timeout:
+           print("Server shutdown due to timeout")
+           break
+       finally:
+           connection.close()
+           
+   server_socket.close()
+   print("Server Stopped")
+       
 
 def Receive_Data():
    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -78,7 +111,7 @@ def Gripper_V2(parentnode=None,
     gripper.VF1z = virtual_actuator(parentNode=p1,
                            name="VA_z",
                            contact_point=contact_point,
-                           pullPoint=[0,27,-2000])
+                           pullPoint=[0,27,2000])
     
     ###Add PositionEffector
     pe = mechobject.addChild('Effectors')
@@ -95,6 +128,12 @@ def Gripper_V2(parentnode=None,
     return gripper
 
 def createScene(rootNode):
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind(('localhost', 12345))
+    server_socket.listen()
+    server_socket.settimeout(60) #Set 60s timeout
+    print("Server Starts, Waiting for connection")
+    
     from stlib3.scene import MainHeader
     pluginList = ["Sofa.Component.IO.Mesh",
                   "Sofa.Component.LinearSolver.Iterative",
@@ -132,13 +171,14 @@ def createScene(rootNode):
                              name = 'Target1', 
                              showcolor=[255., 0., 0., 255.], 
                              showObjectScale= 0.5,
-                             position = [-7.3, 38., 10.1])
+                             position = [-7.3, 38.5 ,9.6])
     target2 = effectorTarget(rootNode,
                              name = 'Target2', 
                              showcolor = [255., 0., 0., 255.], 
                              showObjectScale= 0.5, 
-                             position = [7.3, 38., 10.1])
+                             position = [7.3, 38.5 ,9.6])
     
+    print(type(target1.t.findData("traslation")))
    #  print(list(target1.t.__data__))
    #  print(target1.t.findData("position").value)
     
@@ -152,9 +192,15 @@ def createScene(rootNode):
                                           name = "VFO",
                                           object_Y = gripper.VF1y, 
                                           object_Z = gripper.VF1z,
-                                          target_1 = target1)
+                                          target_1 = target1,
+                                          target_2 = target2)
     
     rootNode.addObject(dataController)
+    
+    data_thread = threading.Thread(target = receive_data,
+                                   args = (server_socket, dataController))
+    data_thread.start()
+    
     
     return rootNode
  

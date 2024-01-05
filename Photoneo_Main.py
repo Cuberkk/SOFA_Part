@@ -5,14 +5,17 @@ import os
 import sys
 import time
 import socket
+import json
 from sys import platform
 from harvesters.core import Harvester
 
-def Send_Data(data):
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect(('localhost', 12345))
-    client_socket.sendall(data.encode())
-    print("Data sent")
+def send_data(client_socket, data):
+    try:
+        data_str = json.dumps(data)
+        client_socket.sendall(data_str.encode())
+        print("Target data sent")
+    except Exception as e:
+        print(f"Error sending data: {e}")
 
 def point_cloud_check(point_cloud_component):
     
@@ -189,43 +192,52 @@ def freerun():
 
             ia.start() 
             vis = o3d.visualization.Visualizer()
-            # vis.create_window(window_name='Open3D Visualization', width=800, height=600)          
-            while True:
-                with ia.fetch(timeout=10.0) as buffer:
+            # vis.create_window(window_name='Open3D Visualization', width=800, height=600)
+            
+            client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            client_socket.connect(('localhost', 12345))
+            try:          
+                while True:
+                    with ia.fetch(timeout=10.0) as buffer:
 
-                    vis.poll_events()
-                    vis.update_renderer()
-                    vis.poll_events()
-                    
-                    # grab newest frame
-                    # do something with second frame
-                    payload = buffer.payload
-                    
-                    point_cloud_component = payload.components[2]
-                    texture_grey_component = payload.components[0]
-                    texture_rgb_component = payload.components[1]
-                    
-                    pointcloud = point_cloud_check(point_cloud_component)
-                    texture_rgb = texture_check(texture_grey_component , texture_rgb_component , point_cloud_component)
+                        vis.poll_events()
+                        vis.update_renderer()
+                        vis.poll_events()
                         
-                    #First filtration using Point Cloud Data
-                    pointcloud_v1 =Layer_1st(pointcloud)
-                    first_filtered_points = np.sum(np.any(pointcloud_v1 != 0, axis=1))
-                    print("There are:", first_filtered_points, "points after 1st filtration")
-                    
-                    #2nd filtration using Greyscale Channel Information
-                    texture_greyscale_v2 = Layer_2nd(texture_rgb , pointcloud_v1)
-                    second_filtered_points = np.sum(np.any(texture_greyscale_v2 != 0, axis=1))
-                    print("There are:", second_filtered_points , "points after 2nd filtration")
-                    pointcloud_2nd_edition = pointcloud_v1.copy()
-                    pointcloud_2nd_edition[np.all(texture_greyscale_v2  == 0, axis=1)] = 0
-                    
-                    #Select 4 vertexes
-                    Target = vertex_selection(pointcloud_2nd_edition)
-                    print("Target_1:", Target[0], "Target_2:", Target[1])
-                    data = input(Target)
-                    Send_Data(data)
-                    time.sleep(1/8)
+                        # grab newest frame
+                        # do something with second frame
+                        payload = buffer.payload
+                        
+                        point_cloud_component = payload.components[2]
+                        texture_grey_component = payload.components[0]
+                        texture_rgb_component = payload.components[1]
+                        
+                        pointcloud = point_cloud_check(point_cloud_component)
+                        texture_rgb = texture_check(texture_grey_component , texture_rgb_component , point_cloud_component)
+                            
+                        #First filtration using Point Cloud Data
+                        pointcloud_v1 =Layer_1st(pointcloud)
+                        first_filtered_points = np.sum(np.any(pointcloud_v1 != 0, axis=1))
+                        print("There are:", first_filtered_points, "points after 1st filtration")
+                        
+                        #2nd filtration using Greyscale Channel Information
+                        texture_greyscale_v2 = Layer_2nd(texture_rgb , pointcloud_v1)
+                        second_filtered_points = np.sum(np.any(texture_greyscale_v2 != 0, axis=1))
+                        print("There are:", second_filtered_points , "points after 2nd filtration")
+                        pointcloud_2nd_edition = pointcloud_v1.copy()
+                        pointcloud_2nd_edition[np.all(texture_greyscale_v2  == 0, axis=1)] = 0
+                        
+                        #Select 4 vertexes
+                        target = vertex_selection(pointcloud_2nd_edition)
+                        print("Target:", target[0], "Target_2:", target[1])
+                        target_data = [target[0].tolist(), target[1].tolist()]
+                        send_data(client_socket, target_data)
+                        time.sleep(1/8)
+            except KeyboardInterrupt:
+                print("Shutting down the connection.")
+            finally:
+                client_socket.close()
+                print("Connection closed.")
 
 
 if __name__ == "__main__":

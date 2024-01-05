@@ -13,19 +13,22 @@ class Controller(Sofa.Core.Controller):
         self.object_Y = kwargs['object_Y']
         self.object_Z = kwargs['object_Z']
         self.target1 = kwargs['target_1']
+        self.target2 = kwargs['target_2']
         
-    def onAnimateBeginEvent(self,event):
-        low = -20
-        high = 20
-        shape = (1,3)
-        random_array = np.random.uniform(low, high, shape)
-        # print(random_array)
-        self.target1.t.findData("position").value = random_array
-        # print(self.target1.t.findData("traslation").value)
+    def update_target1_position(self, target1, target2):
+        self.target1.t.findData("position").value = target1
+        self.target2.t.findData("position").value = target2
+        
+    # def onAnimateBeginEvent(self,event):
+    #     print(type(self.target1.t.findData("traslation")))
+    #     low = -20
+    #     high = 20
+    #     shape = (1,3)
+    #     random_array = np.random.uniform(low, high, shape)
+    #     # print(random_array)
+    #     self.target1.t.findData("position").value = random_array
+    #     # print(self.target1.t.findData("traslation").value)
         
     def onAnimateEndEvent(self,event):
-        # print(f'V1x: {round(self.object1.findData("force").value,5)},V1y: {round(self.object2.findData("force").value,5)},V1z:{round(self.object3.findData("force").value,5)}')
-        # print(f'V1z:{round(self.object3.findData("force").value,5)}')
-        # print(f'Total_force:{round(math.sqrt(pow(self.object1.findData("force").value,2)+pow(self.object2.findData("force").value,2)+pow(self.object3.findData("force").value,2)),5)}')
         print(f'Total_force:{round(math.sqrt(pow(self.object_Y.findData("force").value,2)+pow(self.object_Z.findData("force").value,2)),5)}')
 
